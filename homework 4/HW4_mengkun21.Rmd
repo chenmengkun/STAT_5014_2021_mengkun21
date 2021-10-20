@@ -1,0 +1,202 @@
+---
+title: "Homework 4"
+author: "Mengkun Chen (mengkun21@vt.edu)"
+output: pdf_document
+---
+
+### Problem 3
+
+```{r message=FALSE, warning=FALSE}
+library(data.table)
+library(tidyverse)
+library(ggplot2)
+```
+
+#### Part A
+
+```{r message=FALSE, warning=FALSE}
+thick<-fread("https://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/ThicknessGauge.dat", 
+             header = FALSE, data.table = FALSE)
+```
+
+- Rename the column: column 2 and 3 are measurements under operator 1, column 4 and 5 are measurements under operator 2, column 6 and 7 are measurements under operator 3. 
+
+- Compute mean thickness for 10 different parts using different operators. 
+
+- Keep the mean thickness as the measure of wall thickness
+
+```{r}
+thick<- thick %>%
+  rename(Part = V1, G11 = V2, G12 = V3, G21 = V4, G22 = V5, G31 = V6, G32 = V7) %>% 
+  mutate(G1 = (G11+G12)/2, G2 = (G21+G22)/2, G3 = (G31+G32)/2) %>% 
+  select(Part, G1, G2, G3)
+
+knitr::kable(thick, digits = 4, caption = "Wall Thickness")
+```
+
+Summary of dataset: 
+
+```{r}
+knitr::kable(summary(thick[,-1]), digits = 4, caption = "Summary of Wall Thickness")
+```
+
+Draw bar plot for wall thickness of 10 parts of the wall. 
+
+```{r}
+thick %>% gather(key = Guage, value = measure, G1:G3) %>% 
+  ggplot(aes(x = Guage, y = measure)) + geom_boxplot() + 
+  theme_light()
+```
+
+Operator 3 tend to get higher thickness measurements. 
+
+
+#### Part B
+
+```{r message=FALSE, warning=FALSE}
+bbweight<-fread("http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/BrainandBodyWeight.dat", header = FALSE, data.table = FALSE)
+colnames(bbweight)<-rep(c("Body Wt", "Brain Wt"), 3)
+```
+
+- Combine all the body weight and brain weight into two separate columns. 
+
+```{r}
+body<-c(bbweight[,1],bbweight[,3],bbweight[,5])
+brain<-c(bbweight[,2],bbweight[,4],bbweight[,6])
+bb<-data.frame("Body Wt" = body, "Brain Wt" = brain)
+knitr::kable(head(bb), digits = 4, caption = "Body-Brain Weight")
+```
+
+Summary of dataset: 
+
+```{r}
+knitr::kable(summary(bb), digits = 4, caption = "Body-Brain Weight Summary")
+```
+
+From the summary table, the dataset may contain several mis-recorded observation, which are far away from the majority observations. 
+
+Draw dot plot to show the relationship between body weight and brain weight ignorning the observations whose body weight and brain weight are greater than the third quartile respectively. 
+
+```{r}
+plot(bb$Body.Wt, bb$Brain.Wt, xlab = "Body Weight", ylab = "Brain Weight", 
+     main = "Brain Weight vs. Body Weight", xlim = c(0,40), ylim = c(0,130))
+lm(bb$Brain.Wt~bb$Body.Wt)
+```
+
+Brain weight and body weight are positive related ignorning some obvious outliers. 
+
+
+#### Part C
+
+```{r message=FALSE, warning=FALSE}
+jump<-fread("http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/LongJumpData.dat", data.table = FALSE, header = FALSE)
+colnames(jump)<-rep(c("Year", "Long Jump"),4)
+```
+
+- Combine all year and long jump columns into two seperate columns. 
+
+```{r}
+year<-c(jump[,1], jump[,3], jump[,5], jump[,7])
+long.jump<-c(jump[,2], jump[,4], jump[,6], jump[,8])
+lj<-data.frame("Year" = year, "Long Jump" = long.jump)
+knitr::kable(head(lj), caption = "Gold Medal Performance for Long Jump")
+```
+
+Summary of Gold Medal performance for Olympic Men's Long Jump. 
+
+```{r}
+knitr::kable(summary(lj), caption = "Summary of Gold Medal Performance for Long Jump")
+```
+
+```{r}
+plot(lj$Year+1900, lj$Long.Jump, xlab = "Year", ylab = "Long Jump Performance", 
+     main = "Gold Medal Performance for Long Jump")
+```
+
+Gold Medal performance for Olympic Men's Long Jump increase as year increase. 
+
+
+#### Part D
+
+```{r message=FALSE, warning=FALSE}
+yield<-fread("http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/tomato.dat", 
+             header = FALSE)
+colnames(yield)<-c("Variety", "D1", "D2", "D3")
+```
+
+- Separate tomato yields under different densities. 
+
+```{r message=FALSE, warning=FALSE}
+d1<-yield %>% 
+  select(D1) %>% 
+  separate(col = D1, into = c("y1", "y2", "y3"), sep = ",") %>% 
+  mutate(Density = c("D1","D1"))
+d2<-yield %>% 
+  select(D2) %>% 
+  separate(col = D2, into = c("y1", "y2", "y3"), sep = ",") %>% 
+  mutate(Density = c("D2","D2"))
+d3<-yield %>% 
+  select(D3) %>% 
+  separate(col = D3, into = c("y1", "y2", "y3"), sep = ",") %>% 
+  mutate(Density = c("D3","D3"))
+tomato<-cbind("Variety" = rep(c("v1", "v2"), 2), rbind(d1, d2, d3)) %>% 
+  gather(key = y, value = yield, y1:y3) %>% 
+  select(Variety, Density, yield)
+knitr::kable(head(tomato), caption = "Tomator Yield")
+```
+
+Summary of tomato yield: 
+
+```{r}
+knitr::kable(summary(tomato), caption = "Summary of Tomato Yield")
+```
+
+```{r}
+tomato %>% ggplot(aes(x = factor(Density), y = as.numeric(yield), 
+                      col = factor(Variety))) + 
+  geom_point() + 
+  theme_classic()
+```
+
+Variety 2 has lower yield than variety 1. Tomato yields increase when planting density increase. 
+
+
+#### Part E
+
+```{r message=FALSE, warning=FALSE}
+larvae<-fread("https://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/LarvaeControl.dat", header = TRUE, data.table = FALSE)
+```
+
+- Separate data according to age. 
+
+- Rearrange the dataset into four columns: block, treat, count and age. 
+
+```{r}
+A1<-larvae[,1:6] %>% 
+  rename("T1" = "1", "T2" = "2", "T3" = "3", "T4" = "4", "T5" = "5") %>% 
+  gather(key = Treat, value = count, T1:T5) %>% 
+  mutate(Age = rep(1, 40))
+A2<-larvae[,c(1,7:11)] %>% 
+  rename("T1" = "\t1", "T2" = "2", "T3" = "3", "T4" = "4", "T5" = "5") %>% 
+  gather(key = Treat, value = count, T1:T5) %>% 
+  mutate(Age = rep(2, 40))
+larvae_count<-rbind(A1, A2)
+knitr::kable(head(larvae_count), caption = "Larvae Counts")
+```
+
+Summary of dataset: 
+
+```{r}
+larvae_count$Block<-as.factor(larvae_count$Block)
+larvae_count$Treat<-as.factor(larvae_count$Treat)
+larvae_count$Age<-as.factor(larvae_count$Age)
+knitr::kable(summary(larvae_count), caption = "Summary of Larvae Counts")
+```
+
+```{r message=FALSE, warning=FALSE}
+larvae_count %>% ggplot(aes(x = Treat, y = count, col = Age, alpha = Block)) + 
+  geom_point() + 
+  theme_classic()
+```
+
+Larvae counts are larger in age 2 than those in age 1. Blocks have significant effect on larvae counts and the effect decrease as block number increase. No obvious treatment effect is shown in the plot. 
